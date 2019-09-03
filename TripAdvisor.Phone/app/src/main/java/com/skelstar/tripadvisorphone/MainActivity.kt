@@ -23,31 +23,19 @@ class MainActivity : AppCompatActivity() {
 
         helper = NotificationHelper(this)
 
-        fab.setOnClickListener { view ->
-            sendNotification(NOTI_PRIMARY1, "title")
+        btnNotify.setOnClickListener { view ->
+            sendNotification(NOTI_PRIMARY1, "Your trip")
         }
     }
 
-    fun sendNotification(id: Int, title: String) {
+    private fun sendNotification(id: Int, title: String) {
         when (id) {
-            NOTI_PRIMARY1 -> helper.notify(
-                    id, helper.getNotification1(title, getString(R.string.primary1_body)))
-//            NOTI_PRIMARY2 -> helper.notify(
-//                    id, helper.getNotification1(title, getString(R.string.primary2_body)))
-//            NOTI_SECONDARY1 -> helper.notify(
-//                    id, helper.getNotification2(title, getString(R.string.secondary1_body)))
-//            NOTI_SECONDARY2 -> helper.notify(
-//                    id, helper.getNotification2(title, getString(R.string.secondary2_body)))
+            NOTI_PRIMARY1 -> helper.notify(id, helper.getNotification1(title, getString(R.string.primary1_body)))
         }
     }
 
 
     companion object {
-        private val TAG = MainActivity::class.java.simpleName
-
         private val NOTI_PRIMARY1 = 1100
-//        private val NOTI_PRIMARY2 = 1101
-//        private val NOTI_SECONDARY1 = 1200
-//        private val NOTI_SECONDARY2 = 1201
     }
 }

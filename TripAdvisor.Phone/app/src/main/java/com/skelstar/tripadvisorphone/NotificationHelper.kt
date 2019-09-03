@@ -91,7 +91,7 @@ internal class NotificationHelper
      * @return The small icon resource id
      */
     private val smallIcon: Int
-        get() = android.R.drawable.stat_notify_chat
+        get() = R.drawable.ic_notification
 
 
     companion object {
