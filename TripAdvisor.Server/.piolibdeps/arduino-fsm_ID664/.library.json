@@ -1,0 +1,39 @@
+{
+    "name": "arduino-fsm", 
+    "version": "2.2.0", 
+    "keywords": [
+        "other"
+    ], 
+    "description": "A library for implementing a finite state machine", 
+    "frameworks": [
+        "arduino"
+    ], 
+    "platforms": [
+        "atmelavr"
+    ], 
+    "authors": [
+        {
+            "email": "jon@humblecoder.com", 
+            "url": null, 
+            "maintainer": true, 
+            "name": "Jon Black"
+        }
+    ], 
+    "repository": {
+        "type": "git", 
+        "url": "https://github.com/jonblack/arduino-fsm"
+    }, 
+    "homepage": null, 
+    "export": {
+        "include": null, 
+        "exclude": [
+            "extras", 
+            "docs", 
+            "tests", 
+            "test", 
+            "*.doxyfile", 
+            "*.pdf"
+        ]
+    }, 
+    "id": 664
+}
