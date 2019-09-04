@@ -3,10 +3,12 @@ package com.skelstar.android.notificationchannels
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Color
 import com.skelstar.tripadvisorphone.R
+
 
 internal class NotificationHelper
     (ctx: Context) : ContextWrapper(ctx) {
@@ -23,10 +25,15 @@ internal class NotificationHelper
         manager.createNotificationChannel(chan1)
     }
 
-    fun getNotification1(title: String, body: String): Notification.Builder {
+    fun getTripNotification(): Notification.Builder {
+
+        var style = Notification.BigTextStyle()
+            .bigText("a very long string\na very long string\na very long string a very long string a very long string a very long string a very long string a very long string ")
+
         return Notification.Builder(applicationContext, PRIMARY_CHANNEL)
-            .setContentTitle(title)
-            .setContentText(body)
+            .setContentTitle("Your trip")
+            .setContentText("Dist: 1.2km")
+            .setStyle(style)
             .setSmallIcon(smallIcon)
             .setAutoCancel(true)
     }

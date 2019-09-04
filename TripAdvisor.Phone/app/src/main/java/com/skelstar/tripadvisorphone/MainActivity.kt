@@ -2,7 +2,9 @@ package com.skelstar.tripadvisorphone
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -24,18 +26,18 @@ class MainActivity : AppCompatActivity() {
         helper = NotificationHelper(this)
 
         btnNotify.setOnClickListener { view ->
-            sendNotification(NOTI_PRIMARY1, "Your trip")
+            sendTripNotification(TRIP_NOTIFY_ID, "Your trip")
         }
     }
 
-    private fun sendNotification(id: Int, title: String) {
+    private fun sendTripNotification(id: Int, title: String) {
         when (id) {
-            NOTI_PRIMARY1 -> helper.notify(id, helper.getNotification1(title, getString(R.string.primary1_body)))
+            TRIP_NOTIFY_ID -> helper.notify(id, helper.getTripNotification())
         }
     }
 
 
     companion object {
-        private val NOTI_PRIMARY1 = 1100
+        private val TRIP_NOTIFY_ID = 1100
     }
 }
