@@ -6,12 +6,12 @@
         {
             "name": "Win32",
             "includePath": [
-                "d:/GitHubs/Esk8BLEDisplay/include",
-                "d:/GitHubs/Esk8BLEDisplay/src",
-                "C:/Users/skels/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
+                "d:/GitHubs/TripAdvisor/TripAdvisor.Server/include",
+                "d:/GitHubs/TripAdvisor/TripAdvisor.Server/src",
                 "C:/Users/skels/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
                 "C:/Users/skels/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
-                "d:/GitHubs/Esk8BLEDisplay/.pio/libdeps/pico32/arduino-fsm_ID664",
+                "C:/Users/skels/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
+                "d:/GitHubs/TripAdvisor/TripAdvisor.Server/.pio/libdeps/pico32/arduino-fsm_ID664",
                 "C:/Users/skels/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/config",
                 "C:/Users/skels/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_trace",
                 "C:/Users/skels/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_update",
@@ -102,12 +102,12 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "d:/GitHubs/Esk8BLEDisplay/include",
-                    "d:/GitHubs/Esk8BLEDisplay/src",
-                    "C:/Users/skels/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
+                    "d:/GitHubs/TripAdvisor/TripAdvisor.Server/include",
+                    "d:/GitHubs/TripAdvisor/TripAdvisor.Server/src",
                     "C:/Users/skels/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
                     "C:/Users/skels/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
-                    "d:/GitHubs/Esk8BLEDisplay/.pio/libdeps/pico32/arduino-fsm_ID664",
+                    "C:/Users/skels/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
+                    "d:/GitHubs/TripAdvisor/TripAdvisor.Server/.pio/libdeps/pico32/arduino-fsm_ID664",
                     "C:/Users/skels/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/config",
                     "C:/Users/skels/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_trace",
                     "C:/Users/skels/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_update",
