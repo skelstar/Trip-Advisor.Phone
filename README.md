@@ -7,3 +7,5 @@
 [https://www.javatpoint.com/kotlin-android-toast](https://www.javatpoint.com/kotlin-android-toast)
 
 [ble code](https://github.com/appsinthesky/Kotlin-Bluetooth/blob/ae814bfa1769326445b5b6e15d5218767c9cd474/app/src/main/res/layout/select_device_layout.xml)
+
+https://github.com/skelstar/Esk8Monitor
