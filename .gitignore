@@ -1,7 +1,7 @@
 *.iml
 /local.properties
-**/.idea/workspace.xml
-**/.idea/tasks.xml
+/TripAdvisor.Phone/.idea/workspace.xml
+/TripAdvisor.Phone/.idea/tasks.xml
 **/.gradle
 .DS_Store
 /TripAdvisor.Phone/build
