@@ -14,6 +14,7 @@ import com.skelstar.android.notificationchannels.NotificationHelper
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
 import org.jetbrains.anko.toast
+import kotlin.system.exitProcess
 
 class MainActivity : AppCompatActivity() {
 
@@ -50,6 +51,9 @@ class MainActivity : AppCompatActivity() {
         // https://www.youtube.com/watch?v=Oz4CBHrxMMs&t=1752s (at 25:57)
 
         select_device_refresh.setOnClickListener{ pairedDeviceList() }
+
+        val deviceOfInterest = connectToDeviceOfInterest()
+
     }
 
     private fun sendTripNotification(id: Int, title: String) {
@@ -57,6 +61,23 @@ class MainActivity : AppCompatActivity() {
         when (id) {
             TRIP_NOTIFY_ID -> helper.notify(id, helper.getTripNotification())
         }
+    }
+
+    private fun connectToDeviceOfInterest(): BluetoothDevice? {
+
+        val connectedDevices = m_bluetoothAdapter!!.bondedDevices
+        for (device in connectedDevices) {
+            if (device.address == "24:0A:C4:0A:3C:62") {
+                Log.i("device", "found the device of interest!")
+                return device
+            }
+            else {
+                Log.i("device", "not "+device.address)
+            }
+        }
+
+        toast("Can't find device of interest!")
+        return null
     }
 
     private fun pairedDeviceList() {
@@ -77,11 +98,6 @@ class MainActivity : AppCompatActivity() {
         select_device_list.adapter = adapter
         select_device_list.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
             val device: BluetoothDevice = list[position]
-//            val address: String = device.address
-
-//            val intent = Intent(this, ControlActivity::class.java)
-//            intent.putExtra(EXTRA_ADDRESS, address)
-//            startActivity(intent)
         }
     }
 
