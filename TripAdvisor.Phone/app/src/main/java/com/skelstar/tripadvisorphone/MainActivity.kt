@@ -2,12 +2,15 @@ package com.skelstar.tripadvisorphone
 
 import android.app.Activity
 import android.bluetooth.*
+import android.bluetooth.le.*
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import com.skelstar.android.notificationchannels.NotificationHelper
 
 import kotlinx.android.synthetic.main.activity_main.*
@@ -24,6 +27,7 @@ class MainActivity : AppCompatActivity() {
     val REQUEST_ENABLE_BLUETOOTH = 1
     var mBluetoothGatt:BluetoothGatt ?= null
     var bleCharacteristic: BluetoothGattCharacteristic ?= null
+    val deviceOfInterestUUID:String = "80:7D:3A:C5:6B:0E"
 
     companion object {
         private val TRIP_NOTIFY_ID = 1100
@@ -49,21 +53,18 @@ class MainActivity : AppCompatActivity() {
             val enableBluetoothIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             startActivityForResult(enableBluetoothIntent, REQUEST_ENABLE_BLUETOOTH)
         }
-        // https://www.youtube.com/watch?v=Oz4CBHrxMMs&t=1752s (at 25:57)
 
         select_device_refresh.setOnClickListener{ pairedDeviceList() }
 
-        val deviceOfInterest = findTheDeviceOfInterest()
+        val deviceOfInterest = m_bluetoothAdapter?.getRemoteDevice(deviceOfInterestUUID)    // findTheDeviceOfInterest()
         if (deviceOfInterest != null) {
-            mBluetoothGatt = deviceOfInterest.connectGatt(MainActivity@ this, false, mBleGattCallBack)
+            mBluetoothGatt = deviceOfInterest.connectGatt(this, false, mBleGattCallBack)
             if (mBluetoothGatt != null) {
                 Log.i("ble", "mBluetoothGatt != null")
             }
 
         }
-
     }
-
 
     private val mBleGattCallBack: BluetoothGattCallback by lazy {
         object : BluetoothGattCallback(){
@@ -72,28 +73,8 @@ class MainActivity : AppCompatActivity() {
                 super.onConnectionStateChange(gatt, status, newState)
                 Log.i("ble", "onConnectionStateChange: ${DeviceProfile.getStateDescription(newState)}, ${DeviceProfile.getStatusDescription(status)}")
                 if(newState == BluetoothProfile.STATE_CONNECTED){
-                    val service = gatt?.getService(DeviceProfile.SERVICE_UUID)
-                    if (service != null) {
-                        Log.i("ble", "got service")
-                        bleCharacteristic = service.getCharacteristic(DeviceProfile.CHARACTERISTIC_STATE_UUID)
-                        if (bleCharacteristic != null) {
-                            Log.i("ble", "got characteristic")
-                            Log.i(
-                                "ble",
-                                "Value: ${gatt?.readCharacteristic(bleCharacteristic)}"
-                            )
-                        }
-                        else {
-                            Log.i("ble", "characteristic null")
-                        }
-                    }
-                    else {
-                        Log.i("ble", "service not found")
-                    }
-//                    if (mBluetoothGatt != null) {
-//                        mBluetoothGatt?.discoverServices()
-//                        Log.i("ble", "discoveringServices")
-//                    }
+                    Log.i("ble", "Discovering services")
+                    mBluetoothGatt?.discoverServices()
                 }
             }
 
@@ -113,17 +94,8 @@ class MainActivity : AppCompatActivity() {
                 Log.d("ble","onCharacteristicRead: reading into the characteristic ${characteristic?.uuid} the value ${characteristic?.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT32,0)}")
 
                 if(DeviceProfile.CHARACTERISTIC_STATE_UUID == characteristic?.uuid){
-
                     gatt?.setCharacteristicNotification(characteristic,true)
-
-                    val value :Int= characteristic?.value!![0].toInt()
-//                    mHandler.post {
-//                        Log.d(TAG,"Value: ${value}")
-//                        mLampSwitcher.setChecked(value==1)
-//                    }
-
                 }
-
             }
 
             override fun onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
@@ -131,7 +103,7 @@ class MainActivity : AppCompatActivity() {
                 Log.d("ble","onCharacteristicChanged: reading into the characteristic ${characteristic?.uuid} the value ${characteristic?.getIntValue(
                     BluetoothGattCharacteristic.FORMAT_UINT32,0)}")
 
-                val value :Int?= characteristic?.value!![0].toInt()
+//                val value :Int?= characteristic?.value!![0].toInt()
 //                mHandler.post {
 //                    Log.d(TAG,"onCharacteristicChanged: Value ${value}")
 //                    mLampSwitcher.setChecked(value==1)
@@ -147,23 +119,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun findTheDeviceOfInterest(): BluetoothDevice? {
-
-        val connectedDevices = m_bluetoothAdapter!!.bondedDevices
-        for (device in connectedDevices) {
-            if (device.address == "24:0A:C4:0A:3C:62") {
-                Log.i("device", "found the device of interest!")
-                //m_bluetoothAdapter.bluetoothLeScanner.stopScan()
-                return device
-            }
-            else {
-                Log.i("device", "not "+device.address)
-            }
-        }
-
-        toast("Can't find device of interest!")
-        return null
-    }
+//    private fun findTheDeviceOfInterest(): BluetoothDevice? {
+//
+//        val connectedDevices = m_bluetoothAdapter!!.bondedDevices
+//        for (device in connectedDevices) {
+//            if (device.address == deviceOfInterestUUID) { // "24:0A:C4:0A:3C:62") {
+//                Log.i("device", "found the device of interest!")
+//                //m_bluetoothAdapter.bluetoothLeScanner.stopScan()
+//                return device
+//            }
+//            else {
+//                Log.i("device", "not "+device.address)
+//            }
+//        }
+//
+//        toast("Can't find device of interest!")
+//        return null
+//    }
 
     private fun pairedDeviceList() {
         Log.i("pairedDevices", "pairedDeviceLIst")
@@ -200,4 +172,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
 }
+
+

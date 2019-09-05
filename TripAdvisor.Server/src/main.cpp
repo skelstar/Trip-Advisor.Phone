@@ -80,7 +80,9 @@ void loop() {
 
   if (millis() - now > 2000) {
     now = millis();
-    sendToClient();
+    if (deviceConnected) {
+      sendToClient();
+    }
     if (stickdata.batteryVoltage > 44.2) {
       stickdata.batteryVoltage = 35.0;
     }
