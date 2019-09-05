@@ -7,4 +7,5 @@
 /TripAdvisor.Phone/captures
 /TripAdvisor.Phone/.externalNativeBuild
 /TripAdvisor.Phone/.cxx
+/TripAdvisor.Phone/local.properties
 /TripAdvisor.Server/.vscode
