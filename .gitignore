@@ -1,0 +1,10 @@
+*.iml
+/local.properties
+**/.idea
+**/.gradle
+.DS_Store
+/TripAdvisor.Phone/build
+/TripAdvisor.Phone/captures
+/TripAdvisor.Phone/.externalNativeBuild
+/TripAdvisor.Phone/.cxx
+/TripAdvisor.Server/.vscode
