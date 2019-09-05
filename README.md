@@ -16,7 +16,7 @@ https://github.com/skelstar/Esk8Monitor
 
 [Android Kotlin BLE Client](https://github.com/chenineazeddine/Android-BLE-GATT-Client/blob/5a4edaecf2360edbf5021c077a709812400ecf69/app/src/main/java/com/cerist/summer/blelightswitcher/BlueToothActivity.kt#L100)
 
-##Road Map
+## Road Map
 - ESP32 sends notification on button press (M5Stack/M5Stick?)
 - Test notifications when device locked etc
 - Decide on metrics
