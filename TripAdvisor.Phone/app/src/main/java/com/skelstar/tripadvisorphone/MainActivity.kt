@@ -1,8 +1,7 @@
 package com.skelstar.tripadvisorphone
 
 import android.app.Activity
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
+import android.bluetooth.*
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -14,7 +13,7 @@ import com.skelstar.android.notificationchannels.NotificationHelper
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
 import org.jetbrains.anko.toast
-import kotlin.system.exitProcess
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -23,6 +22,8 @@ class MainActivity : AppCompatActivity() {
     var m_bluetoothAdapter: BluetoothAdapter? = null
     lateinit var m_pairedDevices: Set<BluetoothDevice>
     val REQUEST_ENABLE_BLUETOOTH = 1
+    var mBluetoothGatt:BluetoothGatt ?= null
+    var bleCharacteristic: BluetoothGattCharacteristic ?= null
 
     companion object {
         private val TRIP_NOTIFY_ID = 1100
@@ -52,8 +53,91 @@ class MainActivity : AppCompatActivity() {
 
         select_device_refresh.setOnClickListener{ pairedDeviceList() }
 
-        val deviceOfInterest = connectToDeviceOfInterest()
+        val deviceOfInterest = findTheDeviceOfInterest()
+        if (deviceOfInterest != null) {
+            mBluetoothGatt = deviceOfInterest.connectGatt(MainActivity@ this, false, mBleGattCallBack)
+            if (mBluetoothGatt != null) {
+                Log.i("ble", "mBluetoothGatt != null")
+            }
 
+        }
+
+    }
+
+
+    private val mBleGattCallBack: BluetoothGattCallback by lazy {
+        object : BluetoothGattCallback(){
+
+            override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
+                super.onConnectionStateChange(gatt, status, newState)
+                Log.i("ble", "onConnectionStateChange: ${DeviceProfile.getStateDescription(newState)}, ${DeviceProfile.getStatusDescription(status)}")
+                if(newState == BluetoothProfile.STATE_CONNECTED){
+                    val service = gatt?.getService(DeviceProfile.SERVICE_UUID)
+                    if (service != null) {
+                        Log.i("ble", "got service")
+                        bleCharacteristic = service.getCharacteristic(DeviceProfile.CHARACTERISTIC_STATE_UUID)
+                        if (bleCharacteristic != null) {
+                            Log.i("ble", "got characteristic")
+                            Log.i(
+                                "ble",
+                                "Value: ${gatt?.readCharacteristic(bleCharacteristic)}"
+                            )
+                        }
+                        else {
+                            Log.i("ble", "characteristic null")
+                        }
+                    }
+                    else {
+                        Log.i("ble", "service not found")
+                    }
+//                    if (mBluetoothGatt != null) {
+//                        mBluetoothGatt?.discoverServices()
+//                        Log.i("ble", "discoveringServices")
+//                    }
+                }
+            }
+
+            override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
+                super.onServicesDiscovered(gatt, status)
+                Log.d("ble","on Services discovered")
+
+                val characteristic = gatt?.getService(DeviceProfile.SERVICE_UUID)
+                    ?.getCharacteristic(DeviceProfile.CHARACTERISTIC_STATE_UUID)
+
+                gatt?.readCharacteristic(characteristic)
+
+            }
+
+            override fun onCharacteristicRead(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int) {
+                super.onCharacteristicRead(gatt, characteristic, status)
+                Log.d("ble","onCharacteristicRead: reading into the characteristic ${characteristic?.uuid} the value ${characteristic?.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT32,0)}")
+
+                if(DeviceProfile.CHARACTERISTIC_STATE_UUID == characteristic?.uuid){
+
+                    gatt?.setCharacteristicNotification(characteristic,true)
+
+                    val value :Int= characteristic?.value!![0].toInt()
+//                    mHandler.post {
+//                        Log.d(TAG,"Value: ${value}")
+//                        mLampSwitcher.setChecked(value==1)
+//                    }
+
+                }
+
+            }
+
+            override fun onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
+                super.onCharacteristicChanged(gatt, characteristic)
+                Log.d("ble","onCharacteristicChanged: reading into the characteristic ${characteristic?.uuid} the value ${characteristic?.getIntValue(
+                    BluetoothGattCharacteristic.FORMAT_UINT32,0)}")
+
+                val value :Int?= characteristic?.value!![0].toInt()
+//                mHandler.post {
+//                    Log.d(TAG,"onCharacteristicChanged: Value ${value}")
+//                    mLampSwitcher.setChecked(value==1)
+//                }
+            }
+        }
     }
 
     private fun sendTripNotification(id: Int, title: String) {
@@ -63,12 +147,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun connectToDeviceOfInterest(): BluetoothDevice? {
+    private fun findTheDeviceOfInterest(): BluetoothDevice? {
 
         val connectedDevices = m_bluetoothAdapter!!.bondedDevices
         for (device in connectedDevices) {
             if (device.address == "24:0A:C4:0A:3C:62") {
                 Log.i("device", "found the device of interest!")
+                //m_bluetoothAdapter.bluetoothLeScanner.stopScan()
                 return device
             }
             else {
@@ -113,6 +198,6 @@ class MainActivity : AppCompatActivity() {
             } else if (resultCode == Activity.RESULT_CANCELED) {
                 toast("Bluetooth enabling has been canceled")
             }
-        }    }
-
+        }
+    }
 }
