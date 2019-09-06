@@ -3,6 +3,7 @@
 #include <BLEUtils.h>
 #include <BLEServer.h>
 #include <BLE2902.h>
+#include <myPushButton.h>
 
 /*--------------------------------------------------------------------------------*/
 
@@ -18,7 +19,40 @@ struct STICK_DATA {
 };
 STICK_DATA stickdata;
 
+
+#define BUTTON_A_PIN 39
+#define BUTTON_B_PIN 38
+#define BUTTON_C_PIN 37
+
 float batteryVoltage = 0.0;
+
+//--------------------------------------------------------------------------------
+
+void button_callback( int eventCode, int eventPin, int eventParam );
+void sendToClient();
+bool deviceConnected = false;
+
+#define 	PULLUP	true
+#define 	OFF_STATE_HIGH	1
+myPushButton button(BUTTON_A_PIN, PULLUP, OFF_STATE_HIGH, button_callback, 500);
+
+void button_callback( int eventCode, int eventPin, int eventParam ) {
+
+  switch (eventCode) {
+    case button.EV_BUTTON_PRESSED:
+      break;
+    case button.EV_RELEASED:
+      Serial.printf("EV_RELEASED\n");
+      //if (deviceConnected) {
+          sendToClient();
+      //}
+      break;
+    case button.EV_SPECFIC_TIME_REACHED:
+      break;
+    default:    
+        break;
+  }
+}
 
 //--------------------------------------------------------------------------------
 
@@ -28,8 +62,6 @@ float batteryVoltage = 0.0;
 BLECharacteristic *pCharacteristic;
 
 /**************************************************************/
-
-bool deviceConnected = false;
 
 class MyServerCallbacks: public BLECharacteristicCallbacks {
 	// receive
@@ -78,15 +110,18 @@ long now = 0;
 
 void loop() {
 
-  if (millis() - now > 2000) {
-    now = millis();
-    if (deviceConnected) {
-      sendToClient();
-    }
-    if (stickdata.batteryVoltage > 44.2) {
-      stickdata.batteryVoltage = 35.0;
-    }
-  }
+  button.serviceEvents();
+
+  // if (millis() - now > 2000) {
+  //   now = millis();
+  //   if (deviceConnected) {
+  //     sendToClient();
+  //   }
+  //   if (stickdata.batteryVoltage > 44.2) {
+  //     stickdata.batteryVoltage = 35.0;
+  //   }
+  // }
+  delay(10);
 }
 //*************************************************************
 bool controllerOnline = true;
