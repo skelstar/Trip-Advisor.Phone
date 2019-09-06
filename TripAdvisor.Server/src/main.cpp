@@ -3,6 +3,8 @@
 #include <BLEUtils.h>
 #include <BLEServer.h>
 #include <BLE2902.h>
+#include <myPushButton.h>
+#include <ArduinoJson.h>
 
 /*--------------------------------------------------------------------------------*/
 
@@ -10,26 +12,51 @@ const char compile_date[] = __DATE__ " " __TIME__;
 const char file_name[] = __FILE__;
 
 //--------------------------------------------------------------
-struct STICK_DATA {
-	float batteryVoltage;
-	float motorCurrent;
+struct VESC_DATA {
+	float volts;
+	float motorA;
 	bool moving;
-	bool vescOnline;
+	bool online;
 };
-STICK_DATA stickdata;
+VESC_DATA vescdata;
 
-float batteryVoltage = 0.0;
+#define BUTTON_A_PIN 39
+#define BUTTON_B_PIN 38
+#define BUTTON_C_PIN 37
 
 //--------------------------------------------------------------------------------
 
-#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+void button_callback( int eventCode, int eventPin, int eventParam );
+void notifyClient();
+bool deviceConnected = false;
+
+#define 	PULLUP	true
+#define 	OFF_STATE_HIGH	1
+myPushButton button(BUTTON_A_PIN, PULLUP, OFF_STATE_HIGH, button_callback, 500);
+
+void button_callback( int eventCode, int eventPin, int eventParam ) {
+
+  switch (eventCode) {
+    case button.EV_BUTTON_PRESSED:
+      break;
+    case button.EV_RELEASED:
+      notifyClient();
+      break;
+    case button.EV_SPECFIC_TIME_REACHED:
+      break;
+    default:    
+        break;
+  }
+}
+
+//--------------------------------------------------------------------------------
+
+#define SERVICE_UUID        "4FAFC201-1FB5-459E-8FCC-C5C9C331914B"
+#define CHARACTERISTIC_UUID "BEB5483E-36E1-4688-B7F5-EA07361B26A8"
 
 BLECharacteristic *pCharacteristic;
 
 /**************************************************************/
-
-bool deviceConnected = false;
 
 class MyServerCallbacks: public BLECharacteristicCallbacks {
 	// receive
@@ -60,14 +87,17 @@ class MyServerCallbacks: public BLECharacteristicCallbacks {
 //--------------------------------------------------------------------------------
 
 void setupBLE();
-void sendToClient();
+void notifyClient();
 
 void setup()
 {
 	Serial.begin(115200);
   Serial.println("Starting TripAdvisor.Server!");
 
-  stickdata.batteryVoltage = 35.0;
+  vescdata.volts = 35.0;
+  vescdata.motorA = 1;
+  vescdata.moving = false;
+  vescdata.online = true;
 
   setupBLE();
 }
@@ -78,28 +108,46 @@ long now = 0;
 
 void loop() {
 
-  if (millis() - now > 2000) {
-    now = millis();
-    sendToClient();
-    if (stickdata.batteryVoltage > 44.2) {
-      stickdata.batteryVoltage = 35.0;
-    }
-  }
+  button.serviceEvents();
+
+  // if (millis() - now > 2000) {
+  //   now = millis();
+  //   if (deviceConnected) {
+  //     notifyClient();
+  //   }
+  //   if (vescdata.volts > 44.2) {
+  //     vescdata.volts = 35.0;
+  //   }
+  // }
+  delay(10);
 }
 //*************************************************************
 bool controllerOnline = true;
 
 //--------------------------------------------------------------
-void sendToClient() {
 
-  stickdata.batteryVoltage += 0.1;
-  stickdata.motorCurrent += 0.2;
+struct TRIP_DATA {
+  float volts;
+  int amphours;
+} tripdata;
 
-	uint8_t bs[sizeof(stickdata)];
-	memcpy(bs, &stickdata, sizeof(stickdata));
+void notifyClient() {
 
-	pCharacteristic->setValue(bs, sizeof(bs));
-	Serial.printf("notifying!: %0.1f\n", stickdata.batteryVoltage);
+  tripdata.volts = vescdata.volts += 0.1;
+  tripdata.amphours = 123;
+
+  // https://arduinojson.org/v6/assistant/
+  const size_t capacity = JSON_OBJECT_SIZE(2);
+  DynamicJsonDocument doc(capacity);
+
+  doc["volts"] = tripdata.volts;
+  doc["amphours"] = tripdata.amphours;
+
+  String output;
+  serializeJson(doc, output);
+
+  pCharacteristic->setValue(output.c_str());
+	Serial.printf("notifying!: %s\n", output.c_str());
 	pCharacteristic->notify();
 }
 //--------------------------------------------------------------
@@ -117,6 +165,7 @@ void setupBLE() {
 	  pCharacteristic->addDescriptor(new BLE2902());
 
     pCharacteristic->setCallbacks(new MyServerCallbacks());
+    // initial value
     pCharacteristic->setValue("Hello World says Neil");
     pService->start();
     BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();

@@ -1,19 +1,25 @@
 package com.skelstar.tripadvisorphone
 
 import android.app.Activity
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
+import android.bluetooth.*
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
 import com.skelstar.android.notificationchannels.NotificationHelper
-
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
 import org.jetbrains.anko.toast
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.concurrent.schedule
+import android.os.Looper
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGatt
+import com.fasterxml.jackson.module.kotlin.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -22,9 +28,17 @@ class MainActivity : AppCompatActivity() {
     var m_bluetoothAdapter: BluetoothAdapter? = null
     lateinit var m_pairedDevices: Set<BluetoothDevice>
     val REQUEST_ENABLE_BLUETOOTH = 1
+    var mBluetoothGatt:BluetoothGatt ?= null
+    var bleCharacteristic: BluetoothGattCharacteristic ?= null
+    val deviceOfInterestUUID:String = "80:7D:3A:C5:6B:0E"
+    val deviceOfInterestUUID2:String = "58:B1:0F:7A:FF:B1"
+    val deviceOfInterestM5Stack = "30:AE:A4:4F:A5:2A"
+//    val CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+    var trip: TripData = TripData(volts = 0f, amphours = 0)
+
 
     companion object {
-        private val TRIP_NOTIFY_ID = 1100
+        private const val TRIP_NOTIFY_ID = 1100
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +49,7 @@ class MainActivity : AppCompatActivity() {
         helper = NotificationHelper(this)
 
         btnNotify.setOnClickListener { _ ->
-            sendTripNotification(TRIP_NOTIFY_ID, "Your trip")
+            sendTripNotification(TRIP_NOTIFY_ID, trip)
         }
 
         m_bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
@@ -47,15 +61,66 @@ class MainActivity : AppCompatActivity() {
             val enableBluetoothIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             startActivityForResult(enableBluetoothIntent, REQUEST_ENABLE_BLUETOOTH)
         }
-        // https://www.youtube.com/watch?v=Oz4CBHrxMMs&t=1752s (at 25:57)
 
         select_device_refresh.setOnClickListener{ pairedDeviceList() }
+
+        val deviceOfInterest = m_bluetoothAdapter?.getRemoteDevice(deviceOfInterestM5Stack)    // findTheDeviceOfInterest()
+        if (deviceOfInterest != null) {
+            mBluetoothGatt = deviceOfInterest.connectGatt(this, false, mBleGattCallBack)
+        }
     }
 
-    private fun sendTripNotification(id: Int, title: String) {
+    private val mBleGattCallBack: BluetoothGattCallback by lazy {
+        object : BluetoothGattCallback(){
+
+            override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
+                super.onConnectionStateChange(gatt, status, newState)
+                Log.i("ble", "onConnectionStateChange: ${DeviceProfile.getStateDescription(newState)}, ${DeviceProfile.getStatusDescription(status)}")
+                if(newState == BluetoothProfile.STATE_CONNECTED){
+                    Timer().schedule(1000){
+                        Log.i("ble", "Timer")
+                        Handler(Looper.getMainLooper()).post(Runnable {
+                            gatt!!.requestMtu(128)  // bigger packet size
+                            mBluetoothGatt?.discoverServices()
+                        })
+                    }
+                }
+            }
+
+            override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
+                //BLE service discovery complete
+                super.onServicesDiscovered(gatt, status)
+
+                val characteristic = getCharacteristic(gatt!!)
+
+                if (characteristic != null) {
+                    enableNotification(gatt, characteristic)
+                }
+            }
+
+            override fun onCharacteristicRead(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int) {
+                super.onCharacteristicRead(gatt, characteristic, status)
+                Log.i("ble","onCharacteristicRead: value ${characteristic?.getStringValue(0)}")
+            }
+
+            override fun onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
+                super.onCharacteristicChanged(gatt, characteristic)
+
+                val data = String(characteristic?.value!!)
+                val mapper = jacksonObjectMapper() // creates ObjectMapper() and adds Kotlin module in one step
+                trip = mapper.readValue(data)
+
+                sendTripNotification(TRIP_NOTIFY_ID, trip)
+
+                Log.i("ble","onCharacteristicChanged: volts = ${trip.volts}v amphours = ${trip.amphours}AH")
+            }
+        }
+    }
+
+    private fun sendTripNotification(id: Int, trip: TripData) {
 
         when (id) {
-            TRIP_NOTIFY_ID -> helper.notify(id, helper.getTripNotification())
+            TRIP_NOTIFY_ID -> helper.notify(id, helper.getTripNotification(trip))
         }
     }
 
@@ -77,11 +142,6 @@ class MainActivity : AppCompatActivity() {
         select_device_list.adapter = adapter
         select_device_list.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
             val device: BluetoothDevice = list[position]
-//            val address: String = device.address
-
-//            val intent = Intent(this, ControlActivity::class.java)
-//            intent.putExtra(EXTRA_ADDRESS, address)
-//            startActivity(intent)
         }
     }
 
@@ -97,6 +157,8 @@ class MainActivity : AppCompatActivity() {
             } else if (resultCode == Activity.RESULT_CANCELED) {
                 toast("Bluetooth enabling has been canceled")
             }
-        }    }
-
+        }
+    }
 }
+
+

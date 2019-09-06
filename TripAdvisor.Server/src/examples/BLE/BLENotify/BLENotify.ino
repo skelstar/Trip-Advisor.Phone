@@ -80,7 +80,7 @@ void loop() {
 
   if (millis() - now > 2000) {
     now = millis();
-    sendToClient();
+    notifyClient();
     if (stickdata.batteryVoltage > 44.2) {
       stickdata.batteryVoltage = 35.0;
     }
@@ -90,7 +90,7 @@ void loop() {
 bool controllerOnline = true;
 
 //--------------------------------------------------------------
-void sendToClient() {
+void notifyClient() {
 
   stickdata.batteryVoltage += 0.1;
   stickdata.motorCurrent += 0.2;
