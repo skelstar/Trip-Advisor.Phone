@@ -40,10 +40,7 @@ void button_callback( int eventCode, int eventPin, int eventParam ) {
     case button.EV_BUTTON_PRESSED:
       break;
     case button.EV_RELEASED:
-      Serial.printf("EV_RELEASED\n");
-      //if (deviceConnected) {
-          notifyClient();
-      //}
+      notifyClient();
       break;
     case button.EV_SPECFIC_TIME_REACHED:
       break;
