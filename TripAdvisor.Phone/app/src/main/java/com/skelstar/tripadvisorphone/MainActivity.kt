@@ -34,10 +34,11 @@ class MainActivity : AppCompatActivity() {
     val deviceOfInterestUUID2:String = "58:B1:0F:7A:FF:B1"
     val deviceOfInterestM5Stack = "30:AE:A4:4F:A5:2A"
 //    val CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+    var trip: TripData = TripData(volts = 0f, amphours = 0)
 
 
     companion object {
-        private val TRIP_NOTIFY_ID = 1100
+        private const val TRIP_NOTIFY_ID = 1100
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,7 +49,7 @@ class MainActivity : AppCompatActivity() {
         helper = NotificationHelper(this)
 
         btnNotify.setOnClickListener { _ ->
-            sendTripNotification(TRIP_NOTIFY_ID, "Your trip")
+            sendTripNotification(TRIP_NOTIFY_ID, trip)
         }
 
         m_bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
@@ -107,17 +108,19 @@ class MainActivity : AppCompatActivity() {
 
                 val data = String(characteristic?.value!!)
                 val mapper = jacksonObjectMapper() // creates ObjectMapper() and adds Kotlin module in one step
-                val state = mapper.readValue<TripData>(data)
+                trip = mapper.readValue(data)
 
-                Log.i("ble","onCharacteristicChanged: volts = ${state.volts}v amphours = ${state.amphours}AH")
+                sendTripNotification(TRIP_NOTIFY_ID, trip)
+
+                Log.i("ble","onCharacteristicChanged: volts = ${trip.volts}v amphours = ${trip.amphours}AH")
             }
         }
     }
 
-    private fun sendTripNotification(id: Int, title: String) {
+    private fun sendTripNotification(id: Int, trip: TripData) {
 
         when (id) {
-            TRIP_NOTIFY_ID -> helper.notify(id, helper.getTripNotification())
+            TRIP_NOTIFY_ID -> helper.notify(id, helper.getTripNotification(trip))
         }
     }
 

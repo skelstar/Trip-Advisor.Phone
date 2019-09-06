@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Color
 import com.skelstar.tripadvisorphone.R
+import com.skelstar.tripadvisorphone.TripData
 
 
 internal class NotificationHelper
@@ -25,15 +26,15 @@ internal class NotificationHelper
         manager.createNotificationChannel(chan1)
     }
 
-    fun getTripNotification(): Notification.Builder {
+    fun getTripNotification(trip: TripData): Notification.Builder {
 
         var style = Notification.BigTextStyle()
             .bigText("a very long string\na very long string\na very long string a very long string a very long string a very long string a very long string a very long string ")
 
         return Notification.Builder(applicationContext, PRIMARY_CHANNEL)
             .setContentTitle("Your trip")
-            .setContentText("Dist: 1.2km")
-            .setStyle(style)
+            .setContentText("Volts: ${trip.volts}v")
+//            .setStyle(style)
             .setSmallIcon(smallIcon)
             .setAutoCancel(true)
     }
