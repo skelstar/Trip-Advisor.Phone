@@ -4,6 +4,7 @@
 #include <BLEServer.h>
 #include <BLE2902.h>
 #include <myPushButton.h>
+#include <ArduinoJson.h>
 
 /*--------------------------------------------------------------------------------*/
 
@@ -11,25 +12,22 @@ const char compile_date[] = __DATE__ " " __TIME__;
 const char file_name[] = __FILE__;
 
 //--------------------------------------------------------------
-struct STICK_DATA {
-	float batteryVoltage;
-	float motorCurrent;
+struct VESC_DATA {
+	float volts;
+	float motorA;
 	bool moving;
-	bool vescOnline;
+	bool online;
 };
-STICK_DATA stickdata;
-
+VESC_DATA vescdata;
 
 #define BUTTON_A_PIN 39
 #define BUTTON_B_PIN 38
 #define BUTTON_C_PIN 37
 
-float batteryVoltage = 0.0;
-
 //--------------------------------------------------------------------------------
 
 void button_callback( int eventCode, int eventPin, int eventParam );
-void sendToClient();
+void notifyClient();
 bool deviceConnected = false;
 
 #define 	PULLUP	true
@@ -44,7 +42,7 @@ void button_callback( int eventCode, int eventPin, int eventParam ) {
     case button.EV_RELEASED:
       Serial.printf("EV_RELEASED\n");
       //if (deviceConnected) {
-          sendToClient();
+          notifyClient();
       //}
       break;
     case button.EV_SPECFIC_TIME_REACHED:
@@ -92,14 +90,17 @@ class MyServerCallbacks: public BLECharacteristicCallbacks {
 //--------------------------------------------------------------------------------
 
 void setupBLE();
-void sendToClient();
+void notifyClient();
 
 void setup()
 {
 	Serial.begin(115200);
   Serial.println("Starting TripAdvisor.Server!");
 
-  stickdata.batteryVoltage = 35.0;
+  vescdata.volts = 35.0;
+  vescdata.motorA = 1;
+  vescdata.moving = false;
+  vescdata.online = true;
 
   setupBLE();
 }
@@ -115,10 +116,10 @@ void loop() {
   // if (millis() - now > 2000) {
   //   now = millis();
   //   if (deviceConnected) {
-  //     sendToClient();
+  //     notifyClient();
   //   }
-  //   if (stickdata.batteryVoltage > 44.2) {
-  //     stickdata.batteryVoltage = 35.0;
+  //   if (vescdata.volts > 44.2) {
+  //     vescdata.volts = 35.0;
   //   }
   // }
   delay(10);
@@ -127,16 +128,29 @@ void loop() {
 bool controllerOnline = true;
 
 //--------------------------------------------------------------
-void sendToClient() {
 
-  stickdata.batteryVoltage += 0.1;
-  stickdata.motorCurrent += 0.2;
+struct TRIP_DATA {
+  float volts;
+  int amphours;
+} tripdata;
 
-	uint8_t bs[sizeof(stickdata)];
-	memcpy(bs, &stickdata, sizeof(stickdata));
+void notifyClient() {
 
-	pCharacteristic->setValue(bs, sizeof(bs));
-	Serial.printf("notifying!: %0.1f\n", stickdata.batteryVoltage);
+  tripdata.volts = vescdata.volts += 0.1;
+  tripdata.amphours = 123;
+
+  // https://arduinojson.org/v6/assistant/
+  const size_t capacity = JSON_OBJECT_SIZE(2);
+  DynamicJsonDocument doc(capacity);
+
+  doc["volts"] = tripdata.volts;
+  doc["amphours"] = tripdata.amphours;
+
+  String output;
+  serializeJson(doc, output);
+
+  pCharacteristic->setValue(output.c_str());
+	Serial.printf("notifying!: %s\n", output.c_str());
 	pCharacteristic->notify();
 }
 //--------------------------------------------------------------
@@ -154,6 +168,7 @@ void setupBLE() {
 	  pCharacteristic->addDescriptor(new BLE2902());
 
     pCharacteristic->setCallbacks(new MyServerCallbacks());
+    // initial value
     pCharacteristic->setValue("Hello World says Neil");
     pService->start();
     BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();

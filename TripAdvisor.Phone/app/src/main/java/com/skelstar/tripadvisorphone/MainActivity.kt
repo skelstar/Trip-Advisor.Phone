@@ -17,12 +17,9 @@ import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.concurrent.schedule
 import android.os.Looper
-import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGatt
-
-
-
+import com.fasterxml.jackson.module.kotlin.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -82,6 +79,7 @@ class MainActivity : AppCompatActivity() {
                     Timer().schedule(1000){
                         Log.i("ble", "Timer")
                         Handler(Looper.getMainLooper()).post(Runnable {
+                            gatt!!.requestMtu(128)  // bigger packet size
                             mBluetoothGatt?.discoverServices()
                         })
                     }
@@ -92,7 +90,7 @@ class MainActivity : AppCompatActivity() {
                 //BLE service discovery complete
                 super.onServicesDiscovered(gatt, status)
 
-                var characteristic = getCharacteristic(gatt!!)
+                val characteristic = getCharacteristic(gatt!!)
 
                 if (characteristic != null) {
                     enableNotification(gatt, characteristic)
@@ -106,7 +104,12 @@ class MainActivity : AppCompatActivity() {
 
             override fun onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
                 super.onCharacteristicChanged(gatt, characteristic)
-                Log.i("ble","onCharacteristicChanged: value ${characteristic?.getStringValue(0)}")
+
+                val data = String(characteristic?.value!!)
+                val mapper = jacksonObjectMapper() // creates ObjectMapper() and adds Kotlin module in one step
+                val state = mapper.readValue<TripData>(data)
+
+                Log.i("ble","onCharacteristicChanged: volts = ${state.volts}v amphours = ${state.amphours}AH")
             }
         }
     }
