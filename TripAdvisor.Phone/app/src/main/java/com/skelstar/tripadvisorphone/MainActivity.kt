@@ -51,8 +51,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        btnNotify.setOnClickListener { _ ->
-            sendTripNotification(this, TRIP_NOTIFY_ID, "Your trip")
+        btnConnect.setOnClickListener { _ ->
+            bleConnect()
         }
 
         select_device_refresh.setOnClickListener{ pairedDeviceList() }
@@ -67,6 +67,10 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(enableBluetoothIntent, REQUEST_ENABLE_BLUETOOTH)
         }
 
+        bleConnect()
+    }
+
+    fun bleConnect() {
         val deviceOfInterest = m_bluetoothAdapter?.getRemoteDevice(deviceOfInterestM5Stack)    // findTheDeviceOfInterest()
         if (deviceOfInterest != null) {
             mBluetoothGatt = deviceOfInterest.connectGatt(this, false, mBleGattCallBack)
@@ -118,13 +122,13 @@ class MainActivity : AppCompatActivity() {
 
             override fun onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
                 super.onCharacteristicChanged(gatt, characteristic)
-                Log.i("ble","onCharacteristicChanged: value ${characteristic?.getStringValue(0)}")
+//                Log.i("ble","onCharacteristicChanged: value ${characteristic?.getStringValue(0)}")
 
                 val data = String(characteristic?.value!!)
-                val mapper = jacksonObjectMapper() // creates ObjectMapper() and adds Kotlin module in one step
+                val mapper = jacksonObjectMapper()
                 trip = mapper.readValue(data)
 
-                sendTripNotification(ctx, TRIP_NOTIFY_ID, "batt: ${trip.volts}")
+//                sendTripNotification(ctx, TRIP_NOTIFY_ID, "batt: ${trip.volts}")
                 Log.i("ble","onCharacteristicChanged: volts = ${trip.volts}v amphours = ${trip.amphours}AH")
             }
         }

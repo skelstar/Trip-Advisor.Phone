@@ -124,7 +124,7 @@ void notifyClient() {
   const size_t capacity = JSON_OBJECT_SIZE(2);
   DynamicJsonDocument doc(capacity);
 
-  doc["volts"] = 34.2;
+  doc["volts"] = vescdata.batteryVoltage;
   doc["amphours"] = 1234;
 
   String output;
