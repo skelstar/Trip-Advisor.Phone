@@ -12,20 +12,18 @@ const char compile_date[] = __DATE__ " " __TIME__;
 const char file_name[] = __FILE__;
 
 //--------------------------------------------------------------
-struct STICK_DATA {
+struct VESC_DATA {
 	float batteryVoltage;
 	float motorCurrent;
 	bool moving;
 	bool vescOnline;
 };
-STICK_DATA stickdata;
+VESC_DATA vescdata;
 
 
 #define BUTTON_A_PIN 39
 #define BUTTON_B_PIN 38
 #define BUTTON_C_PIN 37
-
-float batteryVoltage = 0.0;
 
 //--------------------------------------------------------------------------------
 
@@ -43,10 +41,7 @@ void button_callback( int eventCode, int eventPin, int eventParam ) {
     case button.EV_BUTTON_PRESSED:
       break;
     case button.EV_RELEASED:
-      Serial.printf("EV_RELEASED\n");
-      //if (deviceConnected) {
-          notifyClient();
-      //}
+      notifyClient();
       break;
     case button.EV_SPECFIC_TIME_REACHED:
       break;
@@ -100,7 +95,7 @@ void setup()
 	Serial.begin(115200);
   Serial.println("Starting TripAdvisor.Server!");
 
-  stickdata.batteryVoltage = 35.0;
+  vescdata.batteryVoltage = 35.0;
 
   setupBLE();
 }
@@ -113,15 +108,10 @@ void loop() {
 
   button.serviceEvents();
 
-  // if (millis() - now > 2000) {
-  //   now = millis();
-  //   if (deviceConnected) {
-  //     notifyClient();
-  //   }
-  //   if (stickdata.batteryVoltage > 44.2) {
-  //     stickdata.batteryVoltage = 35.0;
-  //   }
-  // }
+  if (millis() - now > 2000) {
+    now = millis();
+    vescdata.batteryVoltage += 0.1;
+  }
   delay(10);
 }
 //*************************************************************

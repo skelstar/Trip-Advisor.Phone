@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity() {
                 super.onConnectionStateChange(gatt, status, newState)
                 Log.i("ble", "onConnectionStateChange: ${DeviceProfile.getStateDescription(newState)} = ${DeviceProfile.getStatusDescription(status)}")
                 if(newState == BluetoothProfile.STATE_CONNECTED){
-                    Timer().schedule(600){
+                    Timer().schedule(1000){
                         Handler(Looper.getMainLooper()).post(Runnable {
                             gatt!!.requestMtu(128)  // bigger packet size
                             mBluetoothGatt?.discoverServices()
