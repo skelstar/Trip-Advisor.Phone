@@ -120,16 +120,6 @@ bool controllerOnline = true;
 //--------------------------------------------------------------
 void notifyClient() {
 
-  // stickdata.batteryVoltage += 0.1;
-  // stickdata.motorCurrent += 0.2;
-
-	// uint8_t bs[sizeof(stickdata)];
-	// memcpy(bs, &stickdata, sizeof(stickdata));
-
-	// pCharacteristic->setValue(bs, sizeof(bs));
-	// Serial.printf("notifying!: %0.1f\n", stickdata.batteryVoltage);
-	// pCharacteristic->notify();
-
 // https://arduinojson.org/v6/assistant/
   const size_t capacity = JSON_OBJECT_SIZE(2);
   DynamicJsonDocument doc(capacity);

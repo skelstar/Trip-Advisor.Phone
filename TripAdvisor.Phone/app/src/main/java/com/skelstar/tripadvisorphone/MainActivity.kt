@@ -84,10 +84,8 @@ class MainActivity : AppCompatActivity() {
                 Log.i("ble", "onConnectionStateChange: ${DeviceProfile.getStateDescription(newState)} = ${DeviceProfile.getStatusDescription(status)}")
                 if(newState == BluetoothProfile.STATE_CONNECTED){
                     Timer().schedule(1000){
-                        Handler(Looper.getMainLooper()).post(Runnable {
-                            gatt!!.requestMtu(128)  // bigger packet size
-                            mBluetoothGatt?.discoverServices()
-                        })
+                        gatt!!.requestMtu(128)  // bigger packet size
+                        mBluetoothGatt?.discoverServices()
                     }
                 }
             }
@@ -98,12 +96,18 @@ class MainActivity : AppCompatActivity() {
 
                 Log.i("BLE", "Services discovered!")
 
-                var characteristic = getCharacteristic(gatt!!)
+                val characteristic = getCharacteristic(gatt!!)
 
-                gatt?.setCharacteristicNotification(characteristic!!, true)
+                Timer().schedule(200) {
+                    gatt?.setCharacteristicNotification(characteristic!!, true)
+                    Log.i("BLE", "setCharacteristicNotification")
+                }
 
                 if (characteristic != null) {
-                    enableNotification(gatt, characteristic)
+                    Timer().schedule(200) {
+                        enableNotification(gatt, characteristic)
+                        Log.i("BLE", "enableNotification")
+                    }
                 }
             }
 
@@ -121,7 +125,6 @@ class MainActivity : AppCompatActivity() {
                 trip = mapper.readValue(data)
 
                 sendTripNotification(ctx, TRIP_NOTIFY_ID, "batt: ${trip.volts}")
-
                 Log.i("ble","onCharacteristicChanged: volts = ${trip.volts}v amphours = ${trip.amphours}AH")
             }
         }
