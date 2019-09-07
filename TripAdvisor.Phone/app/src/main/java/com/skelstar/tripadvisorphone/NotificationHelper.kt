@@ -7,7 +7,18 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Color
+import com.skelstar.tripadvisorphone.MainActivity
 import com.skelstar.tripadvisorphone.R
+
+
+fun sendTripNotification(context: Context, id: Int, title: String) {
+
+    val helper = NotificationHelper(context)
+
+    when (id) {
+        MainActivity.TRIP_NOTIFY_ID -> helper.notify(id, helper.getTripNotification())
+    }
+}
 
 
 internal class NotificationHelper

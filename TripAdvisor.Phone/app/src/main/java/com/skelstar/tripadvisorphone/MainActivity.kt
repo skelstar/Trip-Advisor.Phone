@@ -20,8 +20,7 @@ import android.os.Looper
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGatt
-
-
+import com.skelstar.android.notificationchannels.sendTripNotification
 
 
 class MainActivity : AppCompatActivity() {
@@ -36,11 +35,11 @@ class MainActivity : AppCompatActivity() {
     val deviceOfInterestUUID:String = "80:7D:3A:C5:6B:0E"
     val deviceOfInterestUUID2:String = "58:B1:0F:7A:FF:B1"
     val deviceOfInterestM5Stack = "30:AE:A4:4F:A5:2A"
-    val CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+//    val CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
 
 
     companion object {
-        private val TRIP_NOTIFY_ID = 1100
+        val TRIP_NOTIFY_ID = 1100
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,11 +47,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        helper = NotificationHelper(this)
-
         btnNotify.setOnClickListener { _ ->
-            sendTripNotification(TRIP_NOTIFY_ID, "Your trip")
+            sendTripNotification(this, TRIP_NOTIFY_ID, "Your trip")
         }
+
+        select_device_refresh.setOnClickListener{ pairedDeviceList() }
 
         m_bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if(m_bluetoothAdapter == null) {
@@ -63,8 +62,6 @@ class MainActivity : AppCompatActivity() {
             val enableBluetoothIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             startActivityForResult(enableBluetoothIntent, REQUEST_ENABLE_BLUETOOTH)
         }
-
-        select_device_refresh.setOnClickListener{ pairedDeviceList() }
 
         val deviceOfInterest = m_bluetoothAdapter?.getRemoteDevice(deviceOfInterestM5Stack)    // findTheDeviceOfInterest()
         if (deviceOfInterest != null) {
@@ -80,14 +77,9 @@ class MainActivity : AppCompatActivity() {
 
             override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
                 super.onConnectionStateChange(gatt, status, newState)
-                Log.i("ble", "onConnectionStateChange: ${DeviceProfile.getStateDescription(newState)}, ${DeviceProfile.getStatusDescription(status)}")
+                Log.i("ble", "onConnectionStateChange: ${DeviceProfile.getStateDescription(newState)} = ${DeviceProfile.getStatusDescription(status)}")
                 if(newState == BluetoothProfile.STATE_CONNECTED){
-                    Timer().schedule(1000){
-                        Log.i("ble", "Timer")
-                        Handler(Looper.getMainLooper()).post(Runnable {
-                            mBluetoothGatt?.discoverServices()
-                        })
-                    }
+                    mBluetoothGatt?.discoverServices()
                 }
             }
 
@@ -95,15 +87,13 @@ class MainActivity : AppCompatActivity() {
                 //BLE service discovery complete
                 super.onServicesDiscovered(gatt, status)
 
-                var characteristic = gatt
-                    ?.getService(DeviceProfile.SERVICE_UUID)
-                    ?.getCharacteristic(DeviceProfile.CHARACTERISTIC_STATE_UUID)
+                var characteristic = getCharacteristic(gatt!!)
 
-                gatt?.setCharacteristicNotification(characteristic, true)
+                gatt?.setCharacteristicNotification(characteristic!!, true)
 
-                val descriptor = characteristic?.getDescriptor(CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID)
-                descriptor?.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
-                gatt?.writeDescriptor(descriptor)
+                if (characteristic != null) {
+                    enableNotification(gatt, characteristic)
+                }
             }
 
             override fun onCharacteristicRead(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int) {
@@ -115,36 +105,6 @@ class MainActivity : AppCompatActivity() {
                 super.onCharacteristicChanged(gatt, characteristic)
                 Log.i("ble","onCharacteristicChanged: value ${characteristic?.getStringValue(0)}")
             }
-        }
-    }
-
-    fun setCharacteristicNotification(
-        bluetoothGatt: BluetoothGatt,
-        characteristic: BluetoothGattCharacteristic,
-        enable: Boolean
-    ): Boolean {
-        Log.i("setCharacteristicNotification","setCharacteristicNotification")
-        var success = bluetoothGatt.setCharacteristicNotification(characteristic, enable)
-        if (!success) {
-            Log.i("setCharacteristicNotification", "setCharacteristicNotification not successful")
-            return false
-        }
-        val descriptor = characteristic.getDescriptor(CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID)
-        val value =
-            if (enable)
-                BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
-            else
-                byteArrayOf(0x00, 0x00)
-        if (descriptor.setValue(value) != true) {
-            Log.i("setCharacteristicNotification", "setValue() didn't work")
-        }
-        return bluetoothGatt.writeDescriptor(descriptor) //descriptor write operation successfully started?
-    }
-
-    private fun sendTripNotification(id: Int, title: String) {
-
-        when (id) {
-            TRIP_NOTIFY_ID -> helper.notify(id, helper.getTripNotification())
         }
     }
 

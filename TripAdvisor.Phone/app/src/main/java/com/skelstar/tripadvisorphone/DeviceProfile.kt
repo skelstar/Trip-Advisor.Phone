@@ -11,7 +11,7 @@ class DeviceProfile{
 
         //Read-Wrote only characteristic providing the state of the lamp
         var CHARACTERISTIC_STATE_UUID = UUID.fromString("beb5483e-36e1-4688-b7f5-ea07361b26a8")
-
+        val CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
 
         fun getStateDescription(state: Int): String {
             return when (state) {
