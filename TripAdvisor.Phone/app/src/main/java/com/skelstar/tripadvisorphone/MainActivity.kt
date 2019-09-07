@@ -20,7 +20,10 @@ import android.os.Looper
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGatt
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.skelstar.android.notificationchannels.sendTripNotification
+import org.jetbrains.anko.ctx
 
 
 class MainActivity : AppCompatActivity() {
@@ -36,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     val deviceOfInterestUUID2:String = "58:B1:0F:7A:FF:B1"
     val deviceOfInterestM5Stack = "30:AE:A4:4F:A5:2A"
 //    val CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+    var trip: TripData = TripData(volts = 0f, amphours = 0)
 
 
     companion object {
@@ -111,6 +115,14 @@ class MainActivity : AppCompatActivity() {
             override fun onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
                 super.onCharacteristicChanged(gatt, characteristic)
                 Log.i("ble","onCharacteristicChanged: value ${characteristic?.getStringValue(0)}")
+
+                val data = String(characteristic?.value!!)
+                val mapper = jacksonObjectMapper() // creates ObjectMapper() and adds Kotlin module in one step
+                trip = mapper.readValue(data)
+
+                sendTripNotification(ctx, TRIP_NOTIFY_ID, "batt: ${trip.volts}")
+
+                Log.i("ble","onCharacteristicChanged: volts = ${trip.volts}v amphours = ${trip.amphours}AH")
             }
         }
     }
