@@ -5,6 +5,7 @@
 #include <BLE2902.h>
 #include <myPushButton.h>
 #include <ArduinoJson.h>
+#include <vesc_comms.h>
 
 /*--------------------------------------------------------------------------------*/
 
@@ -15,15 +16,23 @@ const char file_name[] = __FILE__;
 struct VESC_DATA {
 	float batteryVoltage;
 	float motorCurrent;
+  float ampHours;
 	bool moving;
 	bool vescOnline;
 };
 VESC_DATA vescdata;
 
+uint8_t vesc_packet[PACKET_MAX_LENGTH];
 
-#define BUTTON_A_PIN 39
-#define BUTTON_B_PIN 38
-#define BUTTON_C_PIN 37
+vesc_comms vesc;
+#include "vesc.h"
+
+//--------------------------------------------------------------------------------
+
+#define BUTTON_A_PIN  39
+#define BUTTON_B_PIN  38
+#define BUTTON_C_PIN  37
+#define BUTTON_BOOT   0
 
 //--------------------------------------------------------------------------------
 
@@ -33,7 +42,7 @@ bool deviceConnected = false;
 
 #define 	PULLUP	true
 #define 	OFF_STATE_HIGH	1
-myPushButton button(BUTTON_A_PIN, PULLUP, OFF_STATE_HIGH, button_callback, 500);
+myPushButton button(BUTTON_BOOT, PULLUP, OFF_STATE_HIGH, button_callback, 500);
 
 void button_callback( int eventCode, int eventPin, int eventParam ) {
 
@@ -89,14 +98,17 @@ class MyServerCallbacks: public BLECharacteristicCallbacks {
 
 void setupBLE();
 void notifyClient();
+void getVescValues();
+bool poweringDown();
+
 
 void setup()
 {
 	Serial.begin(115200);
   Serial.println("Starting TripAdvisor.Server!");
 
-  vescdata.batteryVoltage = 35.0;
-
+  vesc.init(115200);
+  
   setupBLE();
 }
 
@@ -108,9 +120,13 @@ void loop() {
 
   button.serviceEvents();
 
-  if (millis() - now > 2000) {
+  if (millis() - now > 1000) {
     now = millis();
-    vescdata.batteryVoltage += 0.1;
+    getVescValues();
+
+    if (poweringDown()) {
+      notifyClient();
+    }
   }
   delay(10);
 }
@@ -125,7 +141,7 @@ void notifyClient() {
   DynamicJsonDocument doc(capacity);
 
   doc["volts"] = vescdata.batteryVoltage;
-  doc["amphours"] = 1234;
+  doc["amphours"] = vescdata.ampHours;
 
   String output;
   serializeJson(doc, output);
@@ -135,11 +151,30 @@ void notifyClient() {
 	pCharacteristic->notify();
 }
 //--------------------------------------------------------------
+void getVescValues() {
+
+    int numbytes = vesc.fetch_packet( vesc_packet );
+    if ( numbytes > 1 ) {
+      vescdata.batteryVoltage = vesc.get_voltage(vesc_packet);
+      vescdata.motorCurrent = vesc.get_motor_current(vesc_packet);
+      vescdata.ampHours = vesc.get_amphours_discharged(vesc_packet);
+      Serial.printf("Batt: %.1f \n", vescdata.batteryVoltage);
+    }
+    else {
+      Serial.printf("VESC not responding!\n");
+    }
+}
+
+bool poweringDown() {
+  return vescdata.batteryVoltage > 20.0 && vescdata.batteryVoltage < 30.0;
+}
+//--------------------------------------------------------------
 void setupBLE() {
 
-    BLEDevice::init("Trip Advisor Server");
+    BLEDevice::init("Trip Advisor ESPDEV");
     BLEServer *pServer = BLEDevice::createServer();
     BLEService *pService = pServer->createService(SERVICE_UUID);
+    Serial.printf("UUID: %d\n", pServer->getConnId());
     pCharacteristic = pService->createCharacteristic(
       CHARACTERISTIC_UUID,
       BLECharacteristic::PROPERTY_READ |
