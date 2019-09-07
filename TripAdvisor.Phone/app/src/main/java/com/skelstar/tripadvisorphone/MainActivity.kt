@@ -40,11 +40,11 @@ class MainActivity : AppCompatActivity() {
     var mBluetoothGatt:BluetoothGatt ?= null
     var bleCharacteristic: BluetoothGattCharacteristic ?= null
 
-    val deviceESP32DevUUID:String = "80:7D:3A:C5:6B:0E"
+    val deviceESP32DevUUID:String = "80:7D:3A:C5:6A:36"
     val deviceOfInterestUUID2:String = "58:B1:0F:7A:FF:B1"
-    val deviceM5Stack = "30:AE:A4:4F:A5:2A"
+    val deviceM5StackUUID = "30:AE:A4:4F:A5:2A"
 
-    var trip: TripData = TripData(volts = 0f, amphours = 0)
+    var trip: TripData = TripData(volts = 0f, amphours = 0f)
 
     lateinit var mHandler: Handler
 
@@ -87,7 +87,7 @@ class MainActivity : AppCompatActivity() {
 
     fun bleConnect() {
 
-        val deviceOfInterest = m_bluetoothAdapter?.getRemoteDevice(deviceM5Stack)    // findTheDeviceOfInterest()
+        val deviceOfInterest = m_bluetoothAdapter?.getRemoteDevice(deviceESP32DevUUID)    // findTheDeviceOfInterest()
         if (deviceOfInterest != null) {
             mBluetoothGatt = deviceOfInterest.connectGatt(this, false, mBleGattCallBack)
             if (mBluetoothGatt != null) {
