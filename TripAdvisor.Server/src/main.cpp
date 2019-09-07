@@ -19,12 +19,14 @@ struct VESC_DATA {
   float ampHours;
 	bool moving;
 	bool vescOnline;
+  float odometer;
 };
 VESC_DATA vescdata;
 
 uint8_t vesc_packet[PACKET_MAX_LENGTH];
 
 vesc_comms vesc;
+
 #include "vesc.h"
 
 //--------------------------------------------------------------------------------
@@ -137,11 +139,12 @@ bool controllerOnline = true;
 void notifyClient() {
 
 // https://arduinojson.org/v6/assistant/
-  const size_t capacity = JSON_OBJECT_SIZE(2);
+  const size_t capacity = JSON_OBJECT_SIZE(3);
   DynamicJsonDocument doc(capacity);
 
   doc["volts"] = vescdata.batteryVoltage;
   doc["amphours"] = vescdata.ampHours;
+  doc["distance"] = vescdata.odometer;
 
   String output;
   serializeJson(doc, output);
@@ -158,6 +161,7 @@ void getVescValues() {
       vescdata.batteryVoltage = vesc.get_voltage(vesc_packet);
       vescdata.motorCurrent = vesc.get_motor_current(vesc_packet);
       vescdata.ampHours = vesc.get_amphours_discharged(vesc_packet);
+      vescdata.odometer = getOdometer();
       Serial.printf("Batt: %.1f \n", vescdata.batteryVoltage);
     }
     else {

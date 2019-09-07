@@ -11,12 +11,12 @@ import com.skelstar.tripadvisorphone.MainActivity
 import com.skelstar.tripadvisorphone.R
 
 
-fun sendTripNotification(context: Context, id: Int, title: String) {
+fun createTripNotification(context: Context, id: Int, text: String, body: String) {
 
     val helper = NotificationHelper(context)
 
     when (id) {
-        MainActivity.TRIP_NOTIFY_ID -> helper.notify(id, helper.getTripNotification())
+        MainActivity.TRIP_NOTIFY_ID -> helper.notify(id, helper.getTripNotification(text, body))
     }
 }
 
@@ -36,15 +36,12 @@ internal class NotificationHelper
         manager.createNotificationChannel(chan1)
     }
 
-    fun getTripNotification(): Notification.Builder {
-
-        var style = Notification.BigTextStyle()
-            .bigText("a very long string\na very long string\na very long string a very long string a very long string a very long string a very long string a very long string ")
+    fun getTripNotification(text: String, body: String): Notification.Builder {
 
         return Notification.Builder(applicationContext, PRIMARY_CHANNEL)
             .setContentTitle("Your trip")
-            .setContentText("Dist: 1.2km")
-            .setStyle(style)
+            .setContentText(text)
+            .setStyle(Notification.BigTextStyle().bigText(body))
             .setSmallIcon(smallIcon)
             .setAutoCancel(true)
     }
