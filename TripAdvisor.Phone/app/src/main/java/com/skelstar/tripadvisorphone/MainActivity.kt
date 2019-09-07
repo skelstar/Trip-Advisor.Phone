@@ -79,13 +79,20 @@ class MainActivity : AppCompatActivity() {
                 super.onConnectionStateChange(gatt, status, newState)
                 Log.i("ble", "onConnectionStateChange: ${DeviceProfile.getStateDescription(newState)} = ${DeviceProfile.getStatusDescription(status)}")
                 if(newState == BluetoothProfile.STATE_CONNECTED){
-                    mBluetoothGatt?.discoverServices()
+                    Timer().schedule(600){
+                        Handler(Looper.getMainLooper()).post(Runnable {
+                            gatt!!.requestMtu(128)  // bigger packet size
+                            mBluetoothGatt?.discoverServices()
+                        })
+                    }
                 }
             }
 
             override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
                 //BLE service discovery complete
                 super.onServicesDiscovered(gatt, status)
+
+                Log.i("BLE", "Services discovered!")
 
                 var characteristic = getCharacteristic(gatt!!)
 
