@@ -12,7 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.skelstar.android.notificationchannels.NotificationHelper
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
-import org.jetbrains.anko.toast
+//import org.jetbrains.anko.toast
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.concurrent.schedule
@@ -20,7 +20,10 @@ import android.os.Looper
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGatt
+import android.content.Context
+import android.os.Message
 import android.widget.TextView
+import android.widget.Toast
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.skelstar.android.notificationchannels.sendTripNotification
@@ -36,11 +39,14 @@ class MainActivity : AppCompatActivity() {
     val REQUEST_ENABLE_BLUETOOTH = 1
     var mBluetoothGatt:BluetoothGatt ?= null
     var bleCharacteristic: BluetoothGattCharacteristic ?= null
-    val deviceOfInterestUUID:String = "80:7D:3A:C5:6B:0E"
+
+    val deviceESP32DevUUID:String = "80:7D:3A:C5:6B:0E"
     val deviceOfInterestUUID2:String = "58:B1:0F:7A:FF:B1"
-    val deviceOfInterestM5Stack = "30:AE:A4:4F:A5:2A"
-//    val CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+    val deviceM5Stack = "30:AE:A4:4F:A5:2A"
+
     var trip: TripData = TripData(volts = 0f, amphours = 0)
+
+    lateinit var mHandler: Handler
 
 
     companion object {
@@ -58,9 +64,17 @@ class MainActivity : AppCompatActivity() {
 
         select_device_refresh.setOnClickListener{ }
 
+        mHandler = object : Handler(Looper.getMainLooper()) {
+            override fun handleMessage(msg: Message) {
+                super.handleMessage(msg)
+                Log.i("Handler", msg.obj as String)
+                toast(msg.obj as String)
+            }
+        }
+
         m_bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if(m_bluetoothAdapter == null) {
-            toast("this device doesn't support bluetooth")
+            Toast.makeText(this, "this device doesn't support bluetooth", Toast.LENGTH_SHORT).show()
             return
         }
         if(!m_bluetoothAdapter!!.isEnabled) {
@@ -72,13 +86,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun bleConnect() {
-        val deviceOfInterest = m_bluetoothAdapter?.getRemoteDevice(deviceOfInterestM5Stack)    // findTheDeviceOfInterest()
+
+        val deviceOfInterest = m_bluetoothAdapter?.getRemoteDevice(deviceM5Stack)    // findTheDeviceOfInterest()
         if (deviceOfInterest != null) {
             mBluetoothGatt = deviceOfInterest.connectGatt(this, false, mBleGattCallBack)
             if (mBluetoothGatt != null) {
                 Log.i("ble", "mBluetoothGatt != null")
             }
         }
+    }
+
+    fun toastAsync(message: String) {
+        val message = mHandler.obtainMessage(1, message)
+        message.sendToTarget()
     }
 
     private val mBleGattCallBack: BluetoothGattCallback by lazy {
@@ -91,9 +111,11 @@ class MainActivity : AppCompatActivity() {
                     Timer().schedule(1000){
                         gatt!!.requestMtu(128)  // bigger packet size
                         mBluetoothGatt?.discoverServices()
+                        toastAsync("Connected")
                     }
                 }
                 else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                    toastAsync("Disconnected!")
                 }
             }
 
@@ -135,6 +157,10 @@ class MainActivity : AppCompatActivity() {
                 Log.i("ble","onCharacteristicChanged: volts = ${trip.volts}v amphours = ${trip.amphours}AH")
             }
         }
+    }
+
+    fun toast(message:CharSequence) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
