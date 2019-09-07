@@ -20,6 +20,7 @@ import android.os.Looper
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGatt
+import android.widget.TextView
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.skelstar.android.notificationchannels.sendTripNotification
@@ -55,7 +56,7 @@ class MainActivity : AppCompatActivity() {
             bleConnect()
         }
 
-        select_device_refresh.setOnClickListener{ pairedDeviceList() }
+        select_device_refresh.setOnClickListener{ }
 
         m_bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if(m_bluetoothAdapter == null) {
@@ -91,6 +92,8 @@ class MainActivity : AppCompatActivity() {
                         gatt!!.requestMtu(128)  // bigger packet size
                         mBluetoothGatt?.discoverServices()
                     }
+                }
+                else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 }
             }
 
@@ -131,27 +134,6 @@ class MainActivity : AppCompatActivity() {
 //                sendTripNotification(ctx, TRIP_NOTIFY_ID, "batt: ${trip.volts}")
                 Log.i("ble","onCharacteristicChanged: volts = ${trip.volts}v amphours = ${trip.amphours}AH")
             }
-        }
-    }
-
-    private fun pairedDeviceList() {
-        Log.i("pairedDevices", "pairedDeviceLIst")
-        m_pairedDevices = m_bluetoothAdapter!!.bondedDevices
-        val list : ArrayList<BluetoothDevice> = ArrayList()
-
-        if (!m_pairedDevices.isEmpty()) {
-            for (device: BluetoothDevice in m_pairedDevices) {
-                list.add(device)
-                Log.i("device", ""+device)
-            }
-        } else {
-            toast("no paired bluetooth devices found")
-        }
-
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, list)
-        select_device_list.adapter = adapter
-        select_device_list.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
-            val device: BluetoothDevice = list[position]
         }
     }
 
