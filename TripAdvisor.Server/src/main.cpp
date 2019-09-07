@@ -4,6 +4,7 @@
 #include <BLEServer.h>
 #include <BLE2902.h>
 #include <myPushButton.h>
+#include <ArduinoJson.h>
 
 /*--------------------------------------------------------------------------------*/
 
@@ -29,7 +30,7 @@ float batteryVoltage = 0.0;
 //--------------------------------------------------------------------------------
 
 void button_callback( int eventCode, int eventPin, int eventParam );
-void sendToClient();
+void notifyClient();
 bool deviceConnected = false;
 
 #define 	PULLUP	true
@@ -44,7 +45,7 @@ void button_callback( int eventCode, int eventPin, int eventParam ) {
     case button.EV_RELEASED:
       Serial.printf("EV_RELEASED\n");
       //if (deviceConnected) {
-          sendToClient();
+          notifyClient();
       //}
       break;
     case button.EV_SPECFIC_TIME_REACHED:
@@ -92,7 +93,7 @@ class MyServerCallbacks: public BLECharacteristicCallbacks {
 //--------------------------------------------------------------------------------
 
 void setupBLE();
-void sendToClient();
+void notifyClient();
 
 void setup()
 {
@@ -115,7 +116,7 @@ void loop() {
   // if (millis() - now > 2000) {
   //   now = millis();
   //   if (deviceConnected) {
-  //     sendToClient();
+  //     notifyClient();
   //   }
   //   if (stickdata.batteryVoltage > 44.2) {
   //     stickdata.batteryVoltage = 35.0;
@@ -127,16 +128,30 @@ void loop() {
 bool controllerOnline = true;
 
 //--------------------------------------------------------------
-void sendToClient() {
+void notifyClient() {
 
-  stickdata.batteryVoltage += 0.1;
-  stickdata.motorCurrent += 0.2;
+  // stickdata.batteryVoltage += 0.1;
+  // stickdata.motorCurrent += 0.2;
 
-	uint8_t bs[sizeof(stickdata)];
-	memcpy(bs, &stickdata, sizeof(stickdata));
+	// uint8_t bs[sizeof(stickdata)];
+	// memcpy(bs, &stickdata, sizeof(stickdata));
 
-	pCharacteristic->setValue(bs, sizeof(bs));
-	Serial.printf("notifying!: %0.1f\n", stickdata.batteryVoltage);
+	// pCharacteristic->setValue(bs, sizeof(bs));
+	// Serial.printf("notifying!: %0.1f\n", stickdata.batteryVoltage);
+	// pCharacteristic->notify();
+
+// https://arduinojson.org/v6/assistant/
+  const size_t capacity = JSON_OBJECT_SIZE(2);
+  DynamicJsonDocument doc(capacity);
+
+  doc["volts"] = 34.2;
+  doc["amphours"] = 1234;
+
+  String output;
+  serializeJson(doc, output);
+
+  pCharacteristic->setValue(output.c_str());
+	Serial.printf("notifying!: %s\n", output.c_str());
 	pCharacteristic->notify();
 }
 //--------------------------------------------------------------
