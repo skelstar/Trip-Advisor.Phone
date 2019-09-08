@@ -6,8 +6,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
 import com.skelstar.android.notificationchannels.NotificationHelper
 import kotlinx.android.synthetic.main.activity_main.*
@@ -54,8 +52,6 @@ class MainActivity : AppCompatActivity() {
         btnConnect.setOnClickListener { _ ->
             bleConnect()
         }
-
-        select_device_refresh.setOnClickListener{ }
 
         mHandler = object : Handler(Looper.getMainLooper()) {
             override fun handleMessage(msg: Message) {

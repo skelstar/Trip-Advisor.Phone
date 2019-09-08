@@ -180,7 +180,6 @@ void setupBLE() {
     BLEDevice::init("Trip Advisor ESPDEV");
     BLEServer *pServer = BLEDevice::createServer();
     BLEService *pService = pServer->createService(SERVICE_UUID);
-    Serial.printf("UUID: %d\n", pServer->getConnId());
     pCharacteristic = pService->createCharacteristic(
       CHARACTERISTIC_UUID,
       BLECharacteristic::PROPERTY_READ |
