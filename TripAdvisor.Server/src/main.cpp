@@ -20,6 +20,7 @@ struct VESC_DATA {
 	bool moving;
 	bool vescOnline;
   float odometer;
+  float stableBatteryVoltage;
 };
 VESC_DATA vescdata;
 
@@ -102,7 +103,7 @@ void setupBLE();
 void notifyClient();
 void getVescValues();
 bool poweringDown();
-
+void serviceStableVoltage(bool moving, float volts);
 
 void setup()
 {
@@ -142,7 +143,7 @@ void notifyClient() {
   const size_t capacity = JSON_OBJECT_SIZE(3);
   DynamicJsonDocument doc(capacity);
 
-  doc["volts"] = vescdata.batteryVoltage;
+  doc["volts"] = vescdata.stableBatteryVoltage;
   doc["amphours"] = vescdata.ampHours;
   doc["distance"] = vescdata.odometer;
 
@@ -154,24 +155,25 @@ void notifyClient() {
 	pCharacteristic->notify();
 }
 //--------------------------------------------------------------
+
 void getVescValues() {
 
     int numbytes = vesc.fetch_packet( vesc_packet );
     if ( numbytes > 1 ) {
       vescdata.batteryVoltage = vesc.get_voltage(vesc_packet);
+      vescdata.moving = vesc.get_rpm(vesc_packet) > 50;
       vescdata.motorCurrent = vesc.get_motor_current(vesc_packet);
       vescdata.ampHours = vesc.get_amphours_discharged(vesc_packet);
       vescdata.odometer = getOdometer();
-      Serial.printf("Batt: %.1f \n", vescdata.batteryVoltage);
+      Serial.printf("Batt: %.1f \n", vescdata.batteryVoltage);    
+
+      serviceStableVoltage(vescdata.moving, vescdata.batteryVoltage);      
     }
     else {
       Serial.printf("VESC not responding!\n");
     }
 }
 
-bool poweringDown() {
-  return vescdata.batteryVoltage > 20.0 && vescdata.batteryVoltage < 30.0;
-}
 //--------------------------------------------------------------
 void setupBLE() {
 

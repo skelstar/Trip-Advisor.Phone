@@ -16,3 +16,24 @@ float getOdometer() {
     int32_t distanceMeters = rotations_to_meters(vesc.get_tachometer(vesc_packet) / 6);
     return distanceMeters / 1000.0;
 }
+
+uint8_t notMovingCounts = 0;
+float stableVolts = 0.0;
+
+void serviceStableVoltage(bool moving, float volts) {
+  if (moving == false && volts == stableVolts) {
+    notMovingCounts++;
+    if (notMovingCounts == 2) {
+      vescdata.stableBatteryVoltage = volts;
+      Serial.printf("Stored stableBatteryVoltage: %0.1f\n", vescdata.stableBatteryVoltage);
+    }
+  }
+  else {
+    stableVolts = volts;
+    notMovingCounts = 0;
+  }
+}
+
+bool poweringDown() {
+  return vescdata.batteryVoltage > 20.0 && vescdata.batteryVoltage < 30.0;
+}
