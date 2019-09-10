@@ -1,11 +1,20 @@
 #include <Arduino.h>
-#include <BLEDevice.h>
-#include <BLEUtils.h>
-#include <BLEServer.h>
-#include <BLE2902.h>
+// #include <BLEDevice.h>
+// #include <BLEUtils.h>
+// #include <BLEServer.h>
+// #include <BLE2902.h>
 #include <myPushButton.h>
 #include <ArduinoJson.h>
 #include <vesc_comms.h>
+#include "BluetoothSerial.h"
+
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
+
+BluetoothSerial SerialBT;
 
 /*--------------------------------------------------------------------------------*/
 
@@ -67,39 +76,39 @@ void button_callback( int eventCode, int eventPin, int eventParam ) {
 #define SERVICE_UUID        "4FAFC201-1FB5-459E-8FCC-C5C9C331914B"
 #define CHARACTERISTIC_UUID "BEB5483E-36E1-4688-B7F5-EA07361B26A8"
 
-BLECharacteristic *pCharacteristic;
+// BLECharacteristic *pCharacteristic;
 
-/**************************************************************/
+// /**************************************************************/
 
-class MyServerCallbacks: public BLECharacteristicCallbacks {
-	// receive
-  void onWrite(BLECharacteristic *pCharacteristic) {
-    std::string value = pCharacteristic->getValue();
-    if (value.length() > 0) {
-      Serial.println("*********");
-      Serial.print("New value: ");
-      for (int i = 0; i < value.length(); i++) {
-        Serial.print(value[i]);
-      }
-      Serial.println();
-      Serial.println("*********");
-    }
-  }
+// class MyServerCallbacks: public BLECharacteristicCallbacks {
+// 	// receive
+//   void onWrite(BLECharacteristic *pCharacteristic) {
+//     std::string value = pCharacteristic->getValue();
+//     if (value.length() > 0) {
+//       Serial.println("*********");
+//       Serial.print("New value: ");
+//       for (int i = 0; i < value.length(); i++) {
+//         Serial.print(value[i]);
+//       }
+//       Serial.println();
+//       Serial.println("*********");
+//     }
+//   }
 
-	void onConnect(BLEServer* pServer) {
-		Serial.printf("device connected\n");
-    deviceConnected = true;
-  };
+// 	void onConnect(BLEServer* pServer) {
+// 		Serial.printf("device connected\n");
+//     deviceConnected = true;
+//   };
 
-  void onDisconnect(BLEServer* pServer) {
-		Serial.printf("device disconnected\n");
-    deviceConnected = false;
-  }
-};
+//   void onDisconnect(BLEServer* pServer) {
+// 		Serial.printf("device disconnected\n");
+//     deviceConnected = false;
+//   }
+// };
 
 //--------------------------------------------------------------------------------
 
-void setupBLE();
+void setupBluetooth();
 void notifyClient();
 void getVescValues();
 bool poweringDown();
@@ -112,7 +121,7 @@ void setup()
 
   vesc.init(115200);
   
-  setupBLE();
+  setupBluetooth();
 }
 
 //*************************************************************
@@ -123,13 +132,23 @@ void loop() {
 
   button.serviceEvents();
 
-  if (millis() - now > 1000) {
-    now = millis();
-    getVescValues();
 
-    if (poweringDown()) {
-      notifyClient();
-    }
+  if (Serial.available()) {
+    SerialBT.write(Serial.read());
+  }
+  if (SerialBT.available()) {
+    Serial.write(SerialBT.read());
+  }
+
+  if (millis() - now > 1000) {
+     now = millis();
+
+     SerialBT.write('c');
+  //   getVescValues();
+
+  //   if (poweringDown()) {
+  //     notifyClient();
+    // }
   }
   delay(10);
 }
@@ -140,19 +159,19 @@ bool controllerOnline = true;
 void notifyClient() {
 
 // https://arduinojson.org/v6/assistant/
-  const size_t capacity = JSON_OBJECT_SIZE(3);
-  DynamicJsonDocument doc(capacity);
+  // const size_t capacity = JSON_OBJECT_SIZE(3);
+  // DynamicJsonDocument doc(capacity);
 
-  doc["volts"] = vescdata.stableBatteryVoltage;
-  doc["amphours"] = vescdata.ampHours;
-  doc["distance"] = vescdata.odometer;
+  // doc["volts"] = vescdata.stableBatteryVoltage;
+  // doc["amphours"] = vescdata.ampHours;
+  // doc["distance"] = vescdata.odometer;
 
-  String output;
-  serializeJson(doc, output);
+  // String output;
+  // serializeJson(doc, output);
 
-  pCharacteristic->setValue(output.c_str());
-	Serial.printf("notifying!: %s\n", output.c_str());
-	pCharacteristic->notify();
+  // pCharacteristic->setValue(output.c_str());
+	// Serial.printf("notifying!: %s\n", output.c_str());
+	// pCharacteristic->notify();
 }
 //--------------------------------------------------------------
 
@@ -175,28 +194,30 @@ void getVescValues() {
 }
 
 //--------------------------------------------------------------
-void setupBLE() {
+void setupBluetooth() {
 
-    BLEDevice::init("Trip Advisor ESPDEV");
-    BLEServer *pServer = BLEDevice::createServer();
-    BLEService *pService = pServer->createService(SERVICE_UUID);
-    pCharacteristic = pService->createCharacteristic(
-      CHARACTERISTIC_UUID,
-      BLECharacteristic::PROPERTY_READ |
-      BLECharacteristic::PROPERTY_WRITE |
-      BLECharacteristic::PROPERTY_NOTIFY
-    );
-	  pCharacteristic->addDescriptor(new BLE2902());
+  SerialBT.begin("Trip Advisor Classic");
 
-    pCharacteristic->setCallbacks(new MyServerCallbacks());
-    pCharacteristic->setValue("Hello World says Neil");
-    pService->start();
-    BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-    pAdvertising->addServiceUUID(SERVICE_UUID);
-    pAdvertising->setScanResponse(true);
-    pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
-    pAdvertising->setMinPreferred(0x12);
-    BLEDevice::startAdvertising();
-    Serial.printf("Characteristic defined!\n");
+    // BLEDevice::init("Trip Advisor ESPDEV");
+    // BLEServer *pServer = BLEDevice::createServer();
+    // BLEService *pService = pServer->createService(SERVICE_UUID);
+    // pCharacteristic = pService->createCharacteristic(
+    //   CHARACTERISTIC_UUID,
+    //   BLECharacteristic::PROPERTY_READ |
+    //   BLECharacteristic::PROPERTY_WRITE |
+    //   BLECharacteristic::PROPERTY_NOTIFY
+    // );
+	  // pCharacteristic->addDescriptor(new BLE2902());
+
+    // pCharacteristic->setCallbacks(new MyServerCallbacks());
+    // pCharacteristic->setValue("Hello World says Neil");
+    // pService->start();
+    // BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+    // pAdvertising->addServiceUUID(SERVICE_UUID);
+    // pAdvertising->setScanResponse(true);
+    // pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
+    // pAdvertising->setMinPreferred(0x12);
+    // BLEDevice::startAdvertising();
+    // Serial.printf("Characteristic defined!\n");
 }
 
