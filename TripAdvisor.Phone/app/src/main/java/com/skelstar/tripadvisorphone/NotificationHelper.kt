@@ -9,6 +9,7 @@ import android.content.ContextWrapper
 import android.graphics.Color
 import com.skelstar.tripadvisorphone.MainActivity
 import com.skelstar.tripadvisorphone.R
+val TRIP_NOTIFY_ID = 1100
 
 
 fun createTripNotification(context: Context, id: Int, text: String, body: String) {
@@ -16,7 +17,7 @@ fun createTripNotification(context: Context, id: Int, text: String, body: String
     val helper = NotificationHelper(context)
 
     when (id) {
-        MainActivity.TRIP_NOTIFY_ID -> helper.notify(id, helper.getTripNotification(text, body))
+        TRIP_NOTIFY_ID -> helper.notify(id, helper.getTripNotification(text, body))
     }
 }
 
