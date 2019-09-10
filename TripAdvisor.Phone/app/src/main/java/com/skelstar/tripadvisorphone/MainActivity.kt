@@ -6,27 +6,20 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
 import com.skelstar.android.notificationchannels.NotificationHelper
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
-//import org.jetbrains.anko.toast
 import java.util.*
-import kotlin.collections.ArrayList
 import kotlin.concurrent.schedule
 import android.os.Looper
-import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGatt
-import android.content.Context
 import android.os.Message
-import android.widget.TextView
 import android.widget.Toast
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.skelstar.android.notificationchannels.sendTripNotification
+import com.skelstar.android.notificationchannels.createTripNotification
 import org.jetbrains.anko.ctx
 
 
@@ -38,16 +31,14 @@ class MainActivity : AppCompatActivity() {
     lateinit var m_pairedDevices: Set<BluetoothDevice>
     val REQUEST_ENABLE_BLUETOOTH = 1
     var mBluetoothGatt:BluetoothGatt ?= null
-    var bleCharacteristic: BluetoothGattCharacteristic ?= null
 
     val deviceESP32DevUUID:String = "80:7D:3A:C5:6A:36"
     val deviceOfInterestUUID2:String = "58:B1:0F:7A:FF:B1"
     val deviceM5StackUUID = "30:AE:A4:4F:A5:2A"
 
-    var trip: TripData = TripData(volts = 0f, amphours = 0f)
+    var trip: TripData = TripData(volts = 0f, amphours = 0f, distance = 0f)
 
     lateinit var mHandler: Handler
-
 
     companion object {
         val TRIP_NOTIFY_ID = 1100
@@ -61,8 +52,6 @@ class MainActivity : AppCompatActivity() {
         btnConnect.setOnClickListener { _ ->
             bleConnect()
         }
-
-        select_device_refresh.setOnClickListener{ }
 
         mHandler = object : Handler(Looper.getMainLooper()) {
             override fun handleMessage(msg: Message) {
@@ -153,8 +142,13 @@ class MainActivity : AppCompatActivity() {
                 val mapper = jacksonObjectMapper()
                 trip = mapper.readValue(data)
 
-//                sendTripNotification(ctx, TRIP_NOTIFY_ID, "batt: ${trip.volts}")
-                Log.i("ble","onCharacteristicChanged: volts = ${trip.volts}v amphours = ${trip.amphours}AH")
+                createTripNotification(ctx,
+                    TRIP_NOTIFY_ID,
+                    "batt: ${trip.volts}v",
+                    "batt: ${trip.volts}v \n" +
+                            "amphours: ${trip.amphours}AH\n" +
+                            "distance: ${trip.distance}km")
+                Log.i("ble","onCharacteristicChanged: value ${characteristic?.getStringValue(0)}")
             }
         }
     }

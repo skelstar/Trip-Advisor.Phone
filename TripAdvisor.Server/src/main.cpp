@@ -19,12 +19,15 @@ struct VESC_DATA {
   float ampHours;
 	bool moving;
 	bool vescOnline;
+  float odometer;
+  float stableBatteryVoltage;
 };
 VESC_DATA vescdata;
 
 uint8_t vesc_packet[PACKET_MAX_LENGTH];
 
 vesc_comms vesc;
+
 #include "vesc.h"
 
 //--------------------------------------------------------------------------------
@@ -100,7 +103,7 @@ void setupBLE();
 void notifyClient();
 void getVescValues();
 bool poweringDown();
-
+void serviceStableVoltage(bool moving, float volts);
 
 void setup()
 {
@@ -137,11 +140,12 @@ bool controllerOnline = true;
 void notifyClient() {
 
 // https://arduinojson.org/v6/assistant/
-  const size_t capacity = JSON_OBJECT_SIZE(2);
+  const size_t capacity = JSON_OBJECT_SIZE(3);
   DynamicJsonDocument doc(capacity);
 
-  doc["volts"] = vescdata.batteryVoltage;
+  doc["volts"] = vescdata.stableBatteryVoltage;
   doc["amphours"] = vescdata.ampHours;
+  doc["distance"] = vescdata.odometer;
 
   String output;
   serializeJson(doc, output);
@@ -151,30 +155,31 @@ void notifyClient() {
 	pCharacteristic->notify();
 }
 //--------------------------------------------------------------
+
 void getVescValues() {
 
     int numbytes = vesc.fetch_packet( vesc_packet );
     if ( numbytes > 1 ) {
       vescdata.batteryVoltage = vesc.get_voltage(vesc_packet);
+      vescdata.moving = vesc.get_rpm(vesc_packet) > 50;
       vescdata.motorCurrent = vesc.get_motor_current(vesc_packet);
       vescdata.ampHours = vesc.get_amphours_discharged(vesc_packet);
-      Serial.printf("Batt: %.1f \n", vescdata.batteryVoltage);
+      vescdata.odometer = getOdometer();
+      Serial.printf("Batt: %.1f \n", vescdata.batteryVoltage);    
+
+      serviceStableVoltage(vescdata.moving, vescdata.batteryVoltage);      
     }
     else {
       Serial.printf("VESC not responding!\n");
     }
 }
 
-bool poweringDown() {
-  return vescdata.batteryVoltage > 20.0 && vescdata.batteryVoltage < 30.0;
-}
 //--------------------------------------------------------------
 void setupBLE() {
 
     BLEDevice::init("Trip Advisor ESPDEV");
     BLEServer *pServer = BLEDevice::createServer();
     BLEService *pService = pServer->createService(SERVICE_UUID);
-    Serial.printf("UUID: %d\n", pServer->getConnId());
     pCharacteristic = pService->createCharacteristic(
       CHARACTERISTIC_UUID,
       BLECharacteristic::PROPERTY_READ |
